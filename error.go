@@ -1,12 +1,10 @@
 package ginrpc
 
 import (
-	"errors"
 	"fmt"
 )
 
-var errHandleType = errors.New("rpc handle must HandlerFunc type")
-
+// Error is a response error with http status code and attributes
 type Error struct {
 	Code  int   // http statusCode
 	Err   error // src error

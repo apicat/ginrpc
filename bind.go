@@ -24,21 +24,16 @@ var autoBindRequestParamTags = []string{
 
 func findRequestParamTags(t reflect.Type) map[string]struct{} {
 	m := make(map[string]struct{})
-	if t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-	if t.Kind() == reflect.Struct {
-		for i := 0; i < t.NumField(); i++ {
-			field := t.Field(i)
-			if field.Anonymous {
-				for k := range findRequestParamTags(field.Type) {
-					m[k] = struct{}{}
-				}
-			} else {
-				for _, v := range autoBindRequestParamTags {
-					if _, ok := field.Tag.Lookup(v); ok {
-						m[v] = struct{}{}
-					}
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if field.Anonymous {
+			for k := range findRequestParamTags(field.Type) {
+				m[k] = struct{}{}
+			}
+		} else {
+			for _, v := range autoBindRequestParamTags {
+				if _, ok := field.Tag.Lookup(v); ok {
+					m[v] = struct{}{}
 				}
 			}
 		}

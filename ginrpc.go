@@ -9,12 +9,13 @@ import (
 )
 
 // Handle for turning handlers into gin.handlefunc
-func Handle[T any, M any](handler func(*gin.Context, *T) (*M, error)) gin.HandlerFunc {
-
-	if !checkHandleParamTypeValid(reflect.TypeOf(handler)) {
-		panic(errHandleType)
+func Handle[T any, M any](handler func(*gin.Context, *T) (M, error)) gin.HandlerFunc {
+	paramType := reflect.TypeOf(new(T)).Elem()
+	if paramType.Kind() != reflect.Struct {
+		panic("handler must be of type `func(*gin.Context,*T)(M,error)`` and the request parameter must be a struct pointer")
 	}
-	bindtags := findRequestParamTags(reflect.TypeOf(new(T)))
+	bindtags := findRequestParamTags(paramType)
+
 	return func(ctx *gin.Context) {
 		var err error
 		var in T
