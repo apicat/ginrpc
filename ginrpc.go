@@ -42,10 +42,6 @@ func Handle[T any, M any](handler func(*gin.Context, *T) (M, error)) gin.Handler
 	}
 }
 
-func checkHandleParamTypeValid(tp reflect.Type) bool {
-	return tp.In(1).Elem().Kind() == reflect.Struct && tp.Out(0).Elem().Kind() == reflect.Struct
-}
-
 func responseRender(opt *option, ctx *gin.Context, res any, err error) {
 	r := opt.getRenderFunc()
 	if err != nil {
