@@ -20,7 +20,7 @@ func (o *option) getRenderFunc() func(*gin.Context, any, *Error) {
 }
 
 func (o *option) autoBinding() bool {
-	return o.disAutobinding
+	return !o.disAutobinding
 }
 
 // ReponseRender custom response output
@@ -43,7 +43,7 @@ func RequestBeforeHook(hook ...func(*gin.Context, any, error) error) gin.Handler
 // AutomaticBinding enable/disable automatic binding and parameter validation
 func AutomaticBinding(v bool) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		setOptToContext(ctx, &option{disAutobinding: v})
+		setOptToContext(ctx, &option{disAutobinding: !v})
 	}
 }
 
