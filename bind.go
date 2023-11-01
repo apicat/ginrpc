@@ -12,6 +12,9 @@ import (
 type Empty struct{}
 
 func IsEmpty(v any) bool {
+	if v == nil {
+		return true
+	}
 	_, ok := v.(*Empty)
 	return ok
 }
@@ -58,11 +61,17 @@ func verifyBindParams(ctx *gin.Context, obj any, tags map[string]struct{}) error
 			//   SomeVar string `query:"some_var"`
 			// }
 			// ```
-			err = customShouldBindQuery(ctx, obj)
+			err = binding.MapFormWithTag(obj, ctx.Request.URL.Query(), "query")
 		case "header":
-			err = ctx.ShouldBindHeader(obj)
+			err = binding.MapFormWithTag(obj, ctx.Request.Header, "header")
 		case "uri":
-			err = ctx.ShouldBindUri(obj)
+			if len(ctx.Params) > 0 {
+				m := make(map[string][]string)
+				for _, v := range ctx.Params {
+					m[v.Key] = []string{v.Value}
+				}
+				err = binding.MapFormWithTag(obj, m, "uri")
+			}
 		}
 	}
 
@@ -71,18 +80,10 @@ func verifyBindParams(ctx *gin.Context, obj any, tags map[string]struct{}) error
 	}
 	// request body content
 	if ctx.Request.Method != http.MethodGet {
-		return ctx.ShouldBind(obj)
-	}
-	return nil
-}
-
-func customShouldBindQuery(ctx *gin.Context, obj any) error {
-	if err := binding.MapFormWithTag(
-		obj, ctx.Request.URL.Query(), "query"); err != nil {
-		return err
-	}
-	if binding.Validator == nil {
-		return nil
+		b := binding.Default(ctx.Request.Method, ctx.ContentType())
+		if err = ctx.ShouldBindWith(obj, b); err != nil {
+			return err
+		}
 	}
 	return binding.Validator.ValidateStruct(obj)
 }
