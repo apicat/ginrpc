@@ -1,9 +1,5 @@
 package ginrpc
 
-import (
-	"fmt"
-)
-
 // Error is a response error with http status code and attributes
 type Error struct {
 	Code  int   // http statusCode
@@ -12,7 +8,7 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("[%d] %v", e.Code, e.Err)
+	return e.Err.Error()
 }
 
 func NewError(code int, err error) *Error {

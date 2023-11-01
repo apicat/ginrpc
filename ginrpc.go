@@ -10,12 +10,11 @@ import (
 
 // Handle for turning handlers into gin.handlefunc
 func Handle[T any, M any](handler func(*gin.Context, *T) (M, error)) gin.HandlerFunc {
-	paramType := reflect.TypeOf(new(T)).Elem()
+	paramType := reflect.TypeOf((*T)(nil)).Elem()
 	if paramType.Kind() != reflect.Struct {
 		panic("handler must be of type `func(*gin.Context,*T)(M,error)`` and the request parameter must be a struct pointer")
 	}
 	bindtags := findRequestParamTags(paramType)
-
 	return func(ctx *gin.Context) {
 		var err error
 		var in T
@@ -30,32 +29,24 @@ func Handle[T any, M any](handler func(*gin.Context, *T) (M, error)) gin.Handler
 			}
 		}
 		if err != nil {
-			var e *Error
-			if !errors.As(err, &e) {
-				e = NewError(http.StatusBadRequest, err)
-			}
-			responseRender(opt, ctx, nil, e)
+			opt.getRenderFunc()(ctx, nil, warpError(err, http.StatusBadRequest))
 			return
 		}
 		res, err := handler(ctx, paramPtr)
-		responseRender(opt, ctx, res, err)
+		opt.getRenderFunc()(ctx, res, warpError(err, 0))
 	}
 }
 
-func responseRender(opt *option, ctx *gin.Context, res any, err error) {
-	r := opt.getRenderFunc()
-	if err != nil {
-		var e *Error
-		if !errors.As(err, &e) {
-			e = &Error{Err: err, Code: http.StatusOK}
-		}
-		if e.Code == 0 {
-			e.Code = http.StatusOK
-		}
-		r(ctx, res, e)
-		return
+func warpError(err error, code int) *Error {
+	if err == nil {
+		return nil
 	}
-	if !IsEmpty(res) {
-		r(ctx, res, nil)
+	var e *Error
+	if !errors.As(err, &e) {
+		e = NewError(code, err)
 	}
+	if e.Code == 0 && code > 0 {
+		e.Code = code
+	}
+	return e
 }
