@@ -7,7 +7,7 @@ import (
 )
 
 type option struct {
-	disAutobinding *bool
+	disAutobinding bool
 	render         func(*gin.Context, any, *Error)
 	beforeHooks    []func(*gin.Context, any, error) error
 }
@@ -20,10 +20,7 @@ func (o *option) getRenderFunc() func(*gin.Context, any, *Error) {
 }
 
 func (o *option) autoBinding() bool {
-	if o.disAutobinding == nil {
-		return true
-	}
-	return !*o.disAutobinding
+	return o.disAutobinding
 }
 
 // ReponseRender custom response output
@@ -46,7 +43,7 @@ func RequestBeforeHook(hook ...func(*gin.Context, any, error) error) gin.Handler
 // AutomaticBinding enable/disable automatic binding and parameter validation
 func AutomaticBinding(v bool) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		setOptToContext(ctx, &option{disAutobinding: &v})
+		setOptToContext(ctx, &option{disAutobinding: v})
 	}
 }
 
@@ -67,7 +64,7 @@ func setOptToContext(ctx *gin.Context, opt *option) {
 		if opt.render != nil {
 			preOpt.render = opt.render
 		}
-		if opt.disAutobinding != nil {
+		if opt.disAutobinding {
 			preOpt.disAutobinding = opt.disAutobinding
 		}
 		if len(opt.beforeHooks) > 0 {
@@ -80,6 +77,7 @@ func setOptToContext(ctx *gin.Context, opt *option) {
 }
 
 func defaultResponseRender(ctx *gin.Context, data any, err *Error) {
+	statusCode := http.StatusOK
 	if err != nil {
 		resbody := make(map[string]any)
 		if err.Attrs != nil {
@@ -88,8 +86,11 @@ func defaultResponseRender(ctx *gin.Context, data any, err *Error) {
 			}
 		}
 		resbody["message"] = err.Error()
-		ctx.JSON(err.Code, resbody)
-		return
+		if err.Code > 0 {
+			statusCode = err.Code
+		}
+		ctx.JSON(statusCode, resbody)
+	} else {
+		ctx.JSON(http.StatusOK, data)
 	}
-	ctx.JSON(http.StatusOK, data)
 }
