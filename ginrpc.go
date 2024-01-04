@@ -22,6 +22,10 @@ func Handle[T any, M any](handler func(*gin.Context, *T) (M, error)) gin.Handler
 		opt := getOptFromContext(ctx)
 		if !IsEmpty(paramPtr) && opt.autoBinding() {
 			err = verifyBindParams(ctx, paramPtr, bindtags)
+			if err != nil {
+				opt.getRenderFunc()(ctx, nil, warpError(err, http.StatusBadRequest))
+				return
+			}
 		}
 		for _, hook := range opt.beforeHooks {
 			if err = hook(ctx, paramPtr, err); err != nil {
